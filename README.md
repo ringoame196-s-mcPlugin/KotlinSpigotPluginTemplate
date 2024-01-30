@@ -1,3 +1,5 @@
+https://github.com/sya-ri/KotlinSpigotPluginTemplate
+
 # SpigotPluginTemplate
 
 ## 使い方
