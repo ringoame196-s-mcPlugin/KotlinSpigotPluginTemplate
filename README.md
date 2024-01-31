@@ -1,3 +1,4 @@
+#KotlinSpigotPluginTemplate
 https://github.com/sya-ri/KotlinSpigotPluginTemplate
 
 # SpigotPluginTemplate
