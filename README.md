@@ -1,7 +1,6 @@
-# KotlinSpigotPluginTemplate (クローン元)
-https://github.com/sya-ri/KotlinSpigotPluginTemplate
-
 # SpigotPluginTemplate
+
+## [KotlinSpigotPluginTemplate (クローン元)](https://github.com/sya-ri/KotlinSpigotPluginTemplate)
 
 ## 使い方
 
