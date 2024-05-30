@@ -4,6 +4,7 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.TaskAction
 import java.io.File
 import java.io.IOException
+import java.time.LocalDate
 
 /**
  * GitHub アカウントを使って プロジェクトをセットアップする
@@ -36,30 +37,29 @@ open class SetupTask : DefaultTask() {
         )
         val buildScript = projectDir.resolve("build.gradle.kts")
         buildScript.writeText(buildScript.readText().replace("@group@", groupId))
+
+        val minecraftVersion  = project.findProperty("pluginVersion").toString()
+        val projectName = project.name
         projectDir.resolve("README.md").writeText(
             """
-                # ${project.name}
-
-                ## plugin.yml
-
-                ビルド時に自動生成されます。[build.gradle.kts](build.gradle.kts) の以下の箇所で設定できます。
-                書き方は https://github.com/Minecrell/plugin-yml の Bukkit kotlin-dsl を見てください。
-
-                ```kotlin
-                configure<BukkitPluginDescription> {
-                    // 内容
-                }
-                ```
-
-                ## タスク
-
-                ### プラグインのビルド `build`
-
-                `build/libs` フォルダに `.jar` を生成します。
-
-                ### テストサーバーの起動 `buildAndLaunchServer`
-
-                `:25565` でテストサーバーを起動します。
+                # $projectName
+                
+                ## プラグイン説明
+                
+                ## コマンド
+                
+                ## 使い方
+                
+                ## configファイル
+                
+                ## 開発環境
+                - Minecraft Version : $minecraftVersion
+                - Kotlin Version : 1.6.10
+                
+                ## プロジェクト情報
+                - プロジェクトパス : ${uri.path}
+                - 開発者名 : $account
+                - 開発開始日 : ${LocalDate.now()}
 
             """.trimIndent()
         )
