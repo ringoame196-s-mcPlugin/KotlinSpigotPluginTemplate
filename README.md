@@ -8,6 +8,9 @@
 - 作成したプロジェクトをクローンする。
 -  Gradle の `setup` タスクを実行して、初期化する。
 
+## 追加機能
+- `setup`タスクを実行時に、README.mdを変更
+
 ## plugin.yml
 
 ビルド時に自動生成されます。[build.gradle.kts](build.gradle.kts) の以下の箇所で設定できます。
