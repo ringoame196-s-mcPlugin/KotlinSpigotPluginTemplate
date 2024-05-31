@@ -24,17 +24,57 @@ open class SetupTask : DefaultTask() {
         val rawAccount = "/?([^/]*)/?".toRegex().find(uri.path)?.groupValues?.get(1) ?: error("アカウント名が見つかりませんでした (${uri.path})")
         val account = rawAccount.replace('-', '_')
         val groupId = "com.github.$account"
-        val srcDir = projectDir.resolve("src/main/kotlin/com/github/$account").apply(File::mkdirs)
+        val srcDirPath = "src/main/kotlin/com/github/$account"
+        val srcDir = projectDir.resolve(srcDirPath).apply(File::mkdirs)
         srcDir.resolve("Main.kt").writeText(
             """
                 package $groupId
 
                 import org.bukkit.plugin.java.JavaPlugin
 
-                class Main : JavaPlugin()
+                class Main : JavaPlugin() {
+                    override fun onEnable() {
+                        super.onEnable()
+                        server.pluginManager.registerEvents(Events(), this)
+                        getCommand("command")!!.setExecutor(Command())
+                    }
+                }
                 
             """.trimIndent()
         )
+        val eventDir = projectDir.resolve("$srcDirPath/events").apply(File::mkdirs)
+        eventDir.resolve("Events.kt").writeText(
+            """
+                package $groupId
+
+                import org.bukkit.event.Listener
+                import org.bukkit.plugin.Plugin
+
+                class Events:Listener
+                
+            """.trimIndent()
+        )
+        val commandDir = projectDir.resolve("$srcDirPath/commands").apply(File::mkdirs)
+        commandDir.resolve("Command.kt").writeText(
+            """
+                package $groupId
+
+                import org.bukkit.command.Command
+                import org.bukkit.command.CommandExecutor
+                import org.bukkit.command.CommandSender
+                import org.bukkit.event.Listener
+
+                class Command:Listener, CommandExecutor {
+                override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<out String>): Boolean {
+                    TODO("Not yet implemented")
+                }
+            }
+                
+            """.trimIndent()
+        )
+
+        projectDir.resolve("src/main/resources/").apply(File::mkdirs) // resources生成
+
         val buildScript = projectDir.resolve("build.gradle.kts")
         buildScript.writeText(buildScript.readText().replace("@group@", groupId))
 
