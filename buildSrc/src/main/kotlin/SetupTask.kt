@@ -64,7 +64,7 @@ open class SetupTask : DefaultTask() {
                 import org.bukkit.command.CommandSender
                 import org.bukkit.event.Listener
 
-                class Command:Listener, CommandExecutor {
+                class Command:CommandExecutor {
                 override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<out String>): Boolean {
                     TODO("Not yet implemented")
                 }
