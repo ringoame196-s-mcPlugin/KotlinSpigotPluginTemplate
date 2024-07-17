@@ -35,7 +35,8 @@ open class SetupTask : DefaultTask() {
                 class Main : JavaPlugin() {
                     override fun onEnable() {
                         super.onEnable()
-                        server.pluginManager.registerEvents(Events(), this)
+                        val plugin = this
+                        server.pluginManager.registerEvents(Events(), plugin)
                         getCommand("command")!!.setExecutor(Command())
                     }
                 }
