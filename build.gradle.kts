@@ -59,7 +59,8 @@ tasks.withType<ShadowJar> {
 
 tasks.named("build") {
     dependsOn("shadowJar")
-    val copyFilePath = "D:/デスクトップ/Twitterサーバー/plugins"
+    // プラグインを特定のパスへ自動コピー
+    val copyFilePath = "D:/デスクトップ/Twitterサーバー/plugins" // コピー先のフォルダーパス
     val copyFile = File(copyFilePath)
     if (copyFile.exists() && copyFile.isDirectory) {
         doFirst {
@@ -68,7 +69,7 @@ tasks.named("build") {
                 into(copyFile)
             }
         }
-        doLast {
+        doLast { // AutomaticCreatingPluginUpdate連携
             // APIリクエストを行う
             val apiUrl = "http://localhost:25585/plugin?name=${project.name}"
             val url = URL(apiUrl)
