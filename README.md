@@ -10,6 +10,8 @@
 
 ## 追加機能
 - `setup`タスクを実行時に、README.mdを変更
+- ビルド時にプラグインをコピー
+- [AutomaticCreatingPluginUpdate](https://github.com/Ringoame196/AutomaticCreatingPluginUpdate)に対応
 
 ## plugin.yml
 
