@@ -36,6 +36,17 @@ configure<BukkitPluginDescription> {
     main = "@group@.Main"
     version = gitVersion()
     apiVersion = "1." + pluginVersion.split(".")[1]
+    /*
+    コマンド追加用
+    commands {
+        register("test") {
+        description = "This is a test command!"
+        aliases = listOf("t")
+        permission = "testplugin.test"
+        usage = "Just run the command!"
+        }
+    }
+    */
 }
 
 tasks.withType<ShadowJar> {
