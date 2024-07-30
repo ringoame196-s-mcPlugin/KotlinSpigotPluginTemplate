@@ -3,6 +3,8 @@ import dev.s7a.gradle.minecraft.server.tasks.LaunchMinecraftServerTask
 import dev.s7a.gradle.minecraft.server.tasks.LaunchMinecraftServerTask.JarUrl
 import groovy.lang.Closure
 import net.minecrell.pluginyml.bukkit.BukkitPluginDescription
+import java.net.HttpURLConnection
+import java.net.URL
 
 plugins {
     kotlin("jvm") version "1.6.10"
