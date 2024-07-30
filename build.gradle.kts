@@ -73,7 +73,8 @@ tasks.named("build") {
         }
         doLast { // AutomaticCreatingPluginUpdate連携
             // APIリクエストを行う
-            val apiUrl = "http://localhost:25585/plugin?name=${project.name}"
+            val port = 25585
+            val apiUrl = "http://localhost:$port/plugin?name=${project.name}"
             val url = URL(apiUrl)
             val connection = url.openConnection() as HttpURLConnection
 
