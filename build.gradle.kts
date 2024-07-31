@@ -89,6 +89,8 @@ tasks.named("build") {
                 } else {
                     println("Failed to get response: ${connection.responseCode}")
                 }
+            } catch (e:ConnectException) {
+                println("Could not connect to reload destination server: ${e.message}")
             } catch (e: Exception) {
                 e.printStackTrace()
                 println("Error during API request: ${e.message}")
