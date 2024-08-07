@@ -30,6 +30,7 @@ open class SetupTask : DefaultTask() {
             """
                 package $groupId
 
+                import ${groupId}.commands.TabCompleter
                 import org.bukkit.plugin.java.JavaPlugin
 
                 class Main : JavaPlugin() {
@@ -37,7 +38,9 @@ open class SetupTask : DefaultTask() {
                         super.onEnable()
                         val plugin = this
                         server.pluginManager.registerEvents(Events(), plugin)
-                        getCommand("command")!!.setExecutor(Command())
+                        // val command = getCommand("command")
+                        // command!!.setExecutor(Command())
+                        // command.tabCompleter = TabCompleter()
                     }
                 }
                 
@@ -66,10 +69,27 @@ open class SetupTask : DefaultTask() {
                 import org.bukkit.event.Listener
 
                 class Command:CommandExecutor {
-                override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<out String>): Boolean {
-                    TODO("Not yet implemented")
+                    override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<out String>): Boolean {
+                        TODO("Not yet implemented")
+                    }
                 }
-            }
+                
+            """.trimIndent()
+        )
+        
+        commandDir.resolve("Command.kt").writeText(
+            """
+                package $groupId
+                
+                import org.bukkit.command.Command
+                import org.bukkit.command.CommandSender
+                import org.bukkit.command.TabCompleter
+
+                class TabCompleter : TabCompleter {
+                    override fun onTabComplete(commandSender: CommandSender, command: Command, label: String, args: Array<out String>): MutableList<String>? {
+                        TODO("Not yet implemented")
+                    }
+                }
                 
             """.trimIndent()
         )
