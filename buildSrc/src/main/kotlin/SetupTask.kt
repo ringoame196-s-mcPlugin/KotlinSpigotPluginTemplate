@@ -48,7 +48,7 @@ open class SetupTask : DefaultTask() {
         val eventDir = projectDir.resolve("$srcDirPath/events").apply(File::mkdirs)
         eventDir.resolve("Events.kt").writeText(
             """
-                package $groupId
+                package $groupId.events
 
                 import org.bukkit.event.Listener
                 import org.bukkit.plugin.Plugin
@@ -60,7 +60,7 @@ open class SetupTask : DefaultTask() {
         val commandDir = projectDir.resolve("$srcDirPath/commands").apply(File::mkdirs)
         commandDir.resolve("Command.kt").writeText(
             """
-                package $groupId
+                package $groupId.commands
 
                 import org.bukkit.command.Command
                 import org.bukkit.command.CommandExecutor
@@ -78,7 +78,7 @@ open class SetupTask : DefaultTask() {
         
         commandDir.resolve("TabCompleter.kt").writeText(
             """
-                package $groupId
+                package $groupId.commands
                 
                 import org.bukkit.command.Command
                 import org.bukkit.command.CommandSender
