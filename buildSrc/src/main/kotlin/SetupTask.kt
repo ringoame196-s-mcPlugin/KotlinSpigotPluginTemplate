@@ -31,6 +31,8 @@ open class SetupTask : DefaultTask() {
                 package $groupId
 
                 import org.bukkit.plugin.java.JavaPlugin
+                import $groupId.commands.Command
+                import $groupId.events.Events
 
                 class Main : JavaPlugin() {
                     override fun onEnable() {
