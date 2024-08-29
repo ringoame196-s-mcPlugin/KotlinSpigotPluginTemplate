@@ -32,6 +32,7 @@ open class SetupTask : DefaultTask() {
 
                 import org.bukkit.plugin.java.JavaPlugin
                 import $groupId.commands.Command
+                import $groupId.commands.TabCompleter
                 import $groupId.events.Events
 
                 class Main : JavaPlugin() {
