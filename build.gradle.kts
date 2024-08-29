@@ -39,6 +39,7 @@ configure<BukkitPluginDescription> {
     main = "@group@.Main"
     version = pluginVersion
     apiVersion = "1." + pluginVersion.split(".")[1]
+    author = "@author@"
     /*
     コマンド追加用
     commands {
