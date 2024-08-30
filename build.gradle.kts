@@ -8,7 +8,7 @@ import java.net.ConnectException
 import java.net.URL
 
 plugins {
-    kotlin("jvm") version "1.6.10"
+    kotlin("jvm") version "1.8.0"
     id("net.minecrell.plugin-yml.bukkit") version "0.5.1"
     id("com.github.ben-manes.versions") version "0.41.0"
     id("com.palantir.git-version") version "0.12.3"
