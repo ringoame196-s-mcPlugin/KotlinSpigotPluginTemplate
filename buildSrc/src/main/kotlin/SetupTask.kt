@@ -118,7 +118,7 @@ open class SetupTask : DefaultTask() {
                 
                 ## 開発環境
                 - Minecraft Version : $minecraftVersion
-                - Kotlin Version : 1.6.10
+                - Kotlin Version : 1.8.0
                 
                 ## プロジェクト情報
                 - プロジェクトパス : ${uri.path}
