@@ -44,10 +44,10 @@ configure<BukkitPluginDescription> {
     コマンド追加用
     commands {
         register("test") {
-        description = "This is a test command!"
-        aliases = listOf("t")
-        permission = "testplugin.test"
-        usage = "Just run the command!"
+            description = "This is a test command!"
+            aliases = listOf("t")
+            permission = "testplugin.test"
+            usage = "Just run the command!"
         }
     }
     */
