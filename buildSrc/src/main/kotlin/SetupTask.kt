@@ -30,10 +30,10 @@ open class SetupTask : DefaultTask() {
             """
                 package $groupId
 
+                import org.bukkit.plugin.java.JavaPlugin
                 import $groupId.commands.Command
                 import $groupId.commands.TabCompleter
                 import $groupId.events.Events
-                import org.bukkit.plugin.java.JavaPlugin
 
                 class Main : JavaPlugin() {
                     override fun onEnable() {
@@ -54,6 +54,7 @@ open class SetupTask : DefaultTask() {
                 package $groupId.events
 
                 import org.bukkit.event.Listener
+                import org.bukkit.plugin.Plugin
 
                 class Events:Listener
                 
@@ -67,10 +68,11 @@ open class SetupTask : DefaultTask() {
                 import org.bukkit.command.Command
                 import org.bukkit.command.CommandExecutor
                 import org.bukkit.command.CommandSender
+                import org.bukkit.event.Listener
 
                 class Command:CommandExecutor {
                     override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<out String>): Boolean {
-                        return true
+                        TODO("Not yet implemented")
                     }
                 }
                 
@@ -87,7 +89,7 @@ open class SetupTask : DefaultTask() {
 
                 class TabCompleter : TabCompleter {
                     override fun onTabComplete(commandSender: CommandSender, command: Command, label: String, args: Array<out String>): MutableList<String>? {
-                        return mutableListOf()
+                        TODO("Not yet implemented")
                     }
                 }
                 
@@ -108,19 +110,22 @@ open class SetupTask : DefaultTask() {
                 
                 ## プラグイン説明
                 
+                ## プラグインダウンロード
+                [ダウンロードリンク](https://github.com/$rawAccount/$projectName/releases/latest)
+                
                 ## コマンド
                 
                 ## 使い方
                 
                 ## configファイル
-                
+                                
                 ## 開発環境
                 - Minecraft Version : $minecraftVersion
                 - Kotlin Version : 1.8.0
                 
                 ## プロジェクト情報
                 - プロジェクトパス : ${uri.path}
-                - 開発者名 : $account
+                - 開発者名 : $rawAccount
                 - 開発開始日 : ${LocalDate.now()}
 
             """.trimIndent()
