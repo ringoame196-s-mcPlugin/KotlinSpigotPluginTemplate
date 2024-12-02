@@ -114,11 +114,16 @@ open class SetupTask : DefaultTask() {
                 [ダウンロードリンク](https://github.com/$rawAccount/$projectName/releases/latest)
                 
                 ## コマンド
-                
+                | コマンド名   |     説明      | 権限 |
+                | --- | ----------- | ------- |
+                | コマンド名 | 説明 | 権限 |
+
                 ## 使い方
                 
                 ## configファイル
-                                
+                | key名   |     説明      | デフォルト値 |
+                | --- | ----------- | ------- |
+                 
                 ## 開発環境
                 - Minecraft Version : $minecraftVersion
                 - Kotlin Version : 1.8.0
