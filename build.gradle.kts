@@ -40,6 +40,7 @@ configure<BukkitPluginDescription> {
     version = pluginVersion
     apiVersion = "1." + pluginVersion.split(".")[1]
     author = "@author@"
+    website = "@website@"
     /*
     コマンド追加用
     commands {
