@@ -101,6 +101,7 @@ open class SetupTask : DefaultTask() {
         val buildScript = projectDir.resolve("build.gradle.kts")
         buildScript.writeText(buildScript.readText().replace("@group@", groupId))
         buildScript.writeText(buildScript.readText().replace("@author@", account))
+        buildScript.writeText(buildScript.readText().replace("@website@","https://github.com/$rawAccount"))
 
         val minecraftVersion  = project.findProperty("pluginVersion").toString()
         val projectName = project.name
