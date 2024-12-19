@@ -36,9 +36,9 @@ open class SetupTask : DefaultTask() {
                 import $groupId.events.Events
 
                 class Main : JavaPlugin() {
+                    private val plugin = this
                     override fun onEnable() {
                         super.onEnable()
-                        val plugin = this
                         server.pluginManager.registerEvents(Events(), plugin)
                         // val command = getCommand("command")
                         // command!!.setExecutor(Command())
