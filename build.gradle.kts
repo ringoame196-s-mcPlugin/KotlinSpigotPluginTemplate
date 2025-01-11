@@ -104,20 +104,4 @@ tasks.named("build") {
     }
 }
 
-task<LaunchMinecraftServerTask>("buildAndLaunchServer") {
-    dependsOn("build")
-    doFirst {
-        copy {
-            from(buildDir.resolve("libs/${project.name}.jar"))
-            into(buildDir.resolve("MinecraftServer/plugins"))
-        }
-    }
-
-    jarUrl.set(JarUrl.Paper(pluginVersion))
-    jarName.set("server.jar")
-    serverDirectory.set(buildDir.resolve("MinecraftServer"))
-    nogui.set(true)
-    agreeEula.set(true)
-}
-
 task<SetupTask>("setup")

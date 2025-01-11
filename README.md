@@ -12,6 +12,7 @@
 - `setup`タスクを実行時に、README.mdを変更
 - ビルド時にプラグインをコピー
 - [AutomaticCreatingPluginUpdate](https://github.com/Ringoame196/AutomaticCreatingPluginUpdate)に対応
+- buildAndLaunchServerの削除
 
 ## plugin.yml
 
