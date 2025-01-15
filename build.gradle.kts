@@ -65,7 +65,7 @@ tasks.withType<ShadowJar> {
 tasks.named("build") {
     dependsOn("shadowJar")
     // プラグインを特定のパスへ自動コピー
-    val copyFilePath = "D:/デスクトップ/Twitterサーバー/plugins" // コピー先のフォルダーパス
+    val copyFilePath = "M:/TwitterServer/plugins/" // コピー先のフォルダーパス
     val copyFile = File(copyFilePath)
     if (copyFile.exists() && copyFile.isDirectory) {
         doFirst {
@@ -77,7 +77,8 @@ tasks.named("build") {
         doLast { // AutomaticCreatingPluginUpdate連携
             // APIリクエストを行う
             val port = 25585
-            val apiUrl = "http://localhost:$port/plugin?name=${project.name}"
+            val ip = "192.168.0.21"
+            val apiUrl = "http://$ip:$port/plugin?name=${project.name}"
             val url = URL(apiUrl)
             val connection = url.openConnection() as HttpURLConnection
 
@@ -92,8 +93,6 @@ tasks.named("build") {
                 } else {
                     println("Failed to get response: ${connection.responseCode}")
                 }
-            } catch (e:ConnectException) {
-                println("Could not connect to reload destination server: ${e.message}")
             } catch (e: Exception) {
                 e.printStackTrace()
                 println("Error during API request: ${e.message}")
