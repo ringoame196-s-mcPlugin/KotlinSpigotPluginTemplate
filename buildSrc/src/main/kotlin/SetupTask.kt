@@ -70,26 +70,13 @@ open class SetupTask : DefaultTask() {
                 import org.bukkit.command.CommandSender
                 import org.bukkit.event.Listener
 
-                class Command:CommandExecutor {
+                class Command:CommandExecutor,TabCompleter {
                     override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<out String>): Boolean {
-                        TODO("Not yet implemented")
+                        return true
                     }
-                }
-                
-            """.trimIndent()
-        )
-        
-        commandDir.resolve("TabCompleter.kt").writeText(
-            """
-                package $groupId.commands
-                
-                import org.bukkit.command.Command
-                import org.bukkit.command.CommandSender
-                import org.bukkit.command.TabCompleter
-
-                class TabCompleter : TabCompleter {
+                    
                     override fun onTabComplete(commandSender: CommandSender, command: Command, label: String, args: Array<out String>): MutableList<String>? {
-                        TODO("Not yet implemented")
+                        return null
                     }
                 }
                 
