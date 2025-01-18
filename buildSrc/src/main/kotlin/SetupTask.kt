@@ -32,7 +32,6 @@ open class SetupTask : DefaultTask() {
 
                 import org.bukkit.plugin.java.JavaPlugin
                 import $groupId.commands.Command
-                import $groupId.commands.TabCompleter
                 import $groupId.events.Events
 
                 class Main : JavaPlugin() {
@@ -42,7 +41,6 @@ open class SetupTask : DefaultTask() {
                         server.pluginManager.registerEvents(Events(), plugin)
                         // val command = getCommand("command")
                         // command!!.setExecutor(Command())
-                        // command.tabCompleter = TabCompleter()
                     }
                 }
                 
