@@ -52,7 +52,6 @@ open class SetupTask : DefaultTask() {
                 package $groupId.events
 
                 import org.bukkit.event.Listener
-                import org.bukkit.plugin.Plugin
 
                 class Events:Listener
                 
@@ -72,7 +71,7 @@ open class SetupTask : DefaultTask() {
                     override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<out String>): Boolean {
                         return true
                     }
-                    
+
                     override fun onTabComplete(commandSender: CommandSender, command: Command, label: String, args: Array<out String>): MutableList<String>? {
                         return null
                     }
