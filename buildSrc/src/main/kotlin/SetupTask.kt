@@ -1,4 +1,6 @@
 import org.eclipse.jgit.api.Git
+import org.eclipse.jgit.api.errors.RefAlreadyExistsException
+import org.eclipse.jgit.api.errors.RefNotFoundException
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.TaskAction
@@ -6,9 +8,6 @@ import java.io.File
 import java.io.IOException
 import java.time.LocalDate
 
-/**
- * GitHub アカウントを使って プロジェクトをセットアップする
- */
 open class SetupTask : DefaultTask() {
     @TaskAction
     fun action() {
@@ -18,13 +17,45 @@ open class SetupTask : DefaultTask() {
         } catch (ex: IOException) {
             error("リポジトリが見つかりませんでした")
         }
+
         val git = Git(repository)
+
+        // --- 👇 ここから追加部分 ---
+        try {
+            val branches = git.branchList().call().map { it.name }
+            val targetBranch = "refs/heads/developer"
+
+            if (targetBranch !in branches) {
+                println("🌱 'developer' ブランチを新規作成します...")
+                git.branchCreate().setName("developer").call()
+            } else {
+                println("🔁 'developer' ブランチは既に存在します。")
+            }
+
+            println("🔀 'developer' ブランチに切り替え中...")
+            git.checkout().setName("developer").call()
+            println("✅ 'developer' ブランチに切り替え完了！")
+        } catch (e: RefAlreadyExistsException) {
+            println("⚠️ 'developer' ブランチは既に存在しています。スキップします。")
+        } catch (e: RefNotFoundException) {
+            println("❌ 'developer' ブランチの作成または切り替えに失敗しました。")
+        } catch (e: Exception) {
+            println("⚠️ Git 操作中にエラーが発生しました: ${e.message}")
+        }
+        // --- 👆 ここまで追加部分 ---
+
+        // ここから元の処理
         val remoteList = git.remoteList().call()
-        val uri = remoteList.flatMap { it.urIs }.firstOrNull { it.host == "github.com" } ?: error("GitHub のプッシュ先が見つかりませんでした")
-        val rawAccount = "/?([^/]*)/?".toRegex().find(uri.path)?.groupValues?.get(1) ?: error("アカウント名が見つかりませんでした (${uri.path})")
+        val uri = remoteList.flatMap { it.urIs }.firstOrNull { it.host == "github.com" }
+            ?: error("GitHub のプッシュ先が見つかりませんでした")
+
+        val rawAccount = "/?([^/]*)/?".toRegex().find(uri.path)?.groupValues?.get(1)
+            ?: error("アカウント名が見つかりませんでした (${uri.path})")
+
         val account = rawAccount.replace('-', '_')
         val groupId = "com.github.$account"
         val srcDirPath = "src/main/kotlin/com/github/$account"
+
         val srcDir = projectDir.resolve(srcDirPath).apply(File::mkdirs)
         srcDir.resolve("Main.kt").writeText(
             """
@@ -43,9 +74,9 @@ open class SetupTask : DefaultTask() {
                         // command!!.setExecutor(Command())
                     }
                 }
-                
             """.trimIndent()
         )
+
         val eventDir = projectDir.resolve("$srcDirPath/events").apply(File::mkdirs)
         eventDir.resolve("Events.kt").writeText(
             """
@@ -54,9 +85,9 @@ open class SetupTask : DefaultTask() {
                 import org.bukkit.event.Listener
 
                 class Events:Listener
-                
             """.trimIndent()
         )
+
         val commandDir = projectDir.resolve("$srcDirPath/commands").apply(File::mkdirs)
         commandDir.resolve("Command.kt").writeText(
             """
@@ -76,18 +107,17 @@ open class SetupTask : DefaultTask() {
                         return null
                     }
                 }
-                
             """.trimIndent()
         )
 
-        projectDir.resolve("src/main/resources/").apply(File::mkdirs) // resources生成
+        projectDir.resolve("src/main/resources/").apply(File::mkdirs)
 
         val buildScript = projectDir.resolve("build.gradle.kts")
         buildScript.writeText(buildScript.readText().replace("@group@", groupId))
         buildScript.writeText(buildScript.readText().replace("@author@", account))
-        buildScript.writeText(buildScript.readText().replace("@website@","https://github.com/$rawAccount"))
+        buildScript.writeText(buildScript.readText().replace("@website@", "https://github.com/$rawAccount"))
 
-        val minecraftVersion  = project.findProperty("pluginVersion").toString()
+        val minecraftVersion = project.findProperty("pluginVersion").toString()
         val projectName = project.name
         projectDir.resolve("README.md").writeText(
             """
@@ -116,7 +146,6 @@ open class SetupTask : DefaultTask() {
                 - プロジェクトパス : ${uri.path}
                 - 開発者名 : $rawAccount
                 - 開発開始日 : ${LocalDate.now()}
-
             """.trimIndent()
         )
     }
