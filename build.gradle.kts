@@ -73,7 +73,7 @@ tasks.named("build") {
         }
         doLast {
             val port = 25585
-            val ip = "192.168.0.21"
+            val ip = "ringoame-server"
             val apiUrl = "http://$ip:$port/plugin?name=${project.name}"
 
             try {
