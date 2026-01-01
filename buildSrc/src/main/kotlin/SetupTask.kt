@@ -20,7 +20,6 @@ open class SetupTask : DefaultTask() {
 
         val git = Git(repository)
 
-        // --- 👇 ここから追加部分 ---
         try {
             val branches = git.branchList().call().map { it.name }
             val targetBranch = "refs/heads/developer"
@@ -42,9 +41,7 @@ open class SetupTask : DefaultTask() {
         } catch (e: Exception) {
             println("⚠️ Git 操作中にエラーが発生しました: ${e.message}")
         }
-        // --- 👆 ここまで追加部分 ---
 
-        // ここから元の処理
         val remoteList = git.remoteList().call()
         val uri = remoteList.flatMap { it.urIs }.firstOrNull { it.host == "github.com" }
             ?: error("GitHub のプッシュ先が見つかりませんでした")
