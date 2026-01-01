@@ -14,9 +14,12 @@ plugins {
     id("org.jmailen.kotlinter") version "3.8.0"
 }
 
-val gitVersion: Closure<String> by extra
+val mcVersion: String by project
+val pluginVersion: String by project
 
-val pluginVersion: String by project.ext
+// 表示用の最終バージョン
+val fullVersion = "$mcVersion-$pluginVersion"
+version = fullVersion
 
 repositories {
     mavenCentral()
@@ -29,13 +32,13 @@ configurations["implementation"].extendsFrom(shadowImplementation)
 
 dependencies {
     shadowImplementation(kotlin("stdlib"))
-    compileOnly("org.spigotmc:spigot-api:$pluginVersion-R0.1-SNAPSHOT")
+    compileOnly("org.spigotmc:spigot-api:$mcVersion-R0.1-SNAPSHOT")
 }
 
 configure<BukkitPluginDescription> {
     main = "@group@.Main"
-    version = pluginVersion
-    apiVersion = "1." + pluginVersion.split(".")[1]
+    version = fullVersion
+    apiVersion = "1." + mcVersion.split(".")[1]
     author = "@author@"
     website = "@website@"
     /*
@@ -67,7 +70,7 @@ tasks.named("build") {
     if (copyFile.exists() && copyFile.isDirectory) {
         doFirst {
             copy {
-                from(buildDir.resolve("libs/${project.name}.jar"))
+                from(buildDir.resolve("libs/${project.name}-$fullVersion.jar"))
                 into(copyFile)
             }
         }
@@ -103,6 +106,18 @@ tasks.named("build") {
                 println("Warning: API通信で予期しないエラーが発生しました: ${e.message}")
             }
         }
+    }
+}
+
+tasks.named("printVersion") {
+    doLast {
+        println(fullVersion)
+    }
+}
+
+tasks.named("printVersion") {
+    doLast {
+        println(fullVersion)
     }
 }
 
