@@ -1,6 +1,5 @@
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.api.errors.RefAlreadyExistsException
-import org.eclipse.jgit.api.errors.RefNotFoundException
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.TaskAction
@@ -12,50 +11,81 @@ open class SetupTask : DefaultTask() {
     @TaskAction
     fun action() {
         val projectDir = project.projectDir
+
+        openGit().use { git ->
+            setupBranch(git)
+
+            val ctx  = makeSetupContext(git)
+            makeSrc(projectDir, ctx)
+            makeResources(projectDir)
+            setupBuildGradle(projectDir, ctx)
+            makeReadMe(projectDir,ctx)
+        }
+    }
+
+    private fun openGit(): Git {
+        val projectDir = project.projectDir
         val repository = try {
-            FileRepositoryBuilder.create(projectDir.resolve(".git"))
+            FileRepositoryBuilder()
+                .setGitDir(projectDir.resolve(".git"))
+                .readEnvironment()
+                .findGitDir()
+                .build()
         } catch (ex: IOException) {
             error("リポジトリが見つかりませんでした")
         }
+        return Git(repository)
+    }
 
-        val git = Git(repository)
-
-        try {
-            val branches = git.branchList().call().map { it.name }
-            val targetBranch = "refs/heads/developer"
-
-            if (targetBranch !in branches) {
-                println("🌱 'developer' ブランチを新規作成します...")
-                git.branchCreate().setName("developer").call()
-            } else {
-                println("🔁 'developer' ブランチは既に存在します。")
-            }
-
-            println("🔀 'developer' ブランチに切り替え中...")
-            git.checkout().setName("developer").call()
-            println("✅ 'developer' ブランチに切り替え完了！")
-        } catch (e: RefAlreadyExistsException) {
-            println("⚠️ 'developer' ブランチは既に存在しています。スキップします。")
-        } catch (e: RefNotFoundException) {
-            println("❌ 'developer' ブランチの作成または切り替えに失敗しました。")
-        } catch (e: Exception) {
-            println("⚠️ Git 操作中にエラーが発生しました: ${e.message}")
-        }
-
+    private fun makeSetupContext(git: Git):SetupContext {
         val remoteList = git.remoteList().call()
         val uri = remoteList.flatMap { it.urIs }.firstOrNull { it.host == "github.com" }
             ?: error("GitHub のプッシュ先が見つかりませんでした")
 
-        val rawAccount = "/?([^/]*)/?".toRegex().find(uri.path)?.groupValues?.get(1)
-            ?: error("アカウント名が見つかりませんでした (${uri.path})")
+        val path = uri.path
 
+        val segments = path.trim('/').split('/')
+        require(segments.size >= 2) { "GitHub URL が不正です: $path" }
+
+        val rawAccount = segments[0]
         val account = rawAccount.replace('-', '_')
         val groupId = "com.github.$account"
-        val srcDirPath = "src/main/kotlin/com/github/$account"
 
+        return SetupContext(
+            rawAccount,
+            account,
+            groupId,
+            "src/main/kotlin/com/github/$account",
+            project.name,
+            project.findProperty("mcVersion").toString(),
+            path
+        )
+    }
+
+    private fun setupBranch(git: Git) {
+        try {
+            git.checkout()
+                .setName("developer")
+                .setCreateBranch(true)
+                .call()
+            logger.lifecycle("🌱 developer ブランチを作成＆切替")
+        } catch (e: RefAlreadyExistsException) {
+            git.checkout().setName("developer").call()
+            logger.lifecycle("🔁 developer ブランチへ切替")
+        }
+    }
+
+    private fun makeSrc(projectDir: File,ctx:SetupContext) {
+        val srcDirPath = ctx.srcDirPath
         val srcDir = projectDir.resolve(srcDirPath).apply(File::mkdirs)
-        srcDir.resolve("Main.kt").writeText(
-            """
+        val groupId = ctx.groupId
+        makeMain(srcDir,groupId)
+        makeEvent(srcDir,"$groupId.events")
+        makeCommand(srcDir,"$groupId.commands")
+    }
+
+    private fun makeMain(srcDir: File, groupId: String) {
+        val main = """
                 package $groupId
 
                 import org.bukkit.plugin.java.JavaPlugin
@@ -72,23 +102,25 @@ open class SetupTask : DefaultTask() {
                     }
                 }
             """.trimIndent()
-        )
+        makeFile(srcDir, "Main.kt", main)
+    }
 
-        val eventDir = projectDir.resolve("$srcDirPath/events").apply(File::mkdirs)
-        eventDir.resolve("Events.kt").writeText(
-            """
-                package $groupId.events
+    private fun makeEvent(srcDir: File, packageName: String) {
+        val eventDir = srcDir.resolve("events").apply(File::mkdirs)
+        val event = """
+                package $packageName
 
                 import org.bukkit.event.Listener
 
                 class Events:Listener
             """.trimIndent()
-        )
+        makeFile(eventDir, "Events.kt", event)
+    }
 
-        val commandDir = projectDir.resolve("$srcDirPath/commands").apply(File::mkdirs)
-        commandDir.resolve("Command.kt").writeText(
-            """
-                package $groupId.commands
+    private fun makeCommand(srcDir: File, packageName: String) {
+        val commandDir = srcDir.resolve("commands").apply(File::mkdirs)
+        val command = """
+                package $packageName
 
                 import org.bukkit.command.Command
                 import org.bukkit.command.CommandExecutor
@@ -105,19 +137,24 @@ open class SetupTask : DefaultTask() {
                     }
                 }
             """.trimIndent()
-        )
+        makeFile(commandDir, "Command.kt", command)
+    }
 
-        projectDir.resolve("src/main/resources/").apply(File::mkdirs)
+    private fun makeResources(projectDir: File) {
+        val resource = projectDir.resolve("src/main/resources/").apply(File::mkdirs)
+        val config = """
+            notification : true
+        """.trimIndent()
+        makeFile(resource,"config.yml",config)
+    }
 
-        val buildScript = projectDir.resolve("build.gradle.kts")
-        buildScript.writeText(buildScript.readText().replace("@group@", groupId))
-        buildScript.writeText(buildScript.readText().replace("@author@", account))
-        buildScript.writeText(buildScript.readText().replace("@website@", "https://github.com/$rawAccount"))
+    private fun makeReadMe(projectDir:File,ctx:SetupContext) {
+        val projectName = ctx.projectName
+        val minecraftVersion = ctx.minecraftVersion
+        val projectPath = ctx.repoPath
+        val rawAccount = ctx.rawAccount
 
-        val minecraftVersion = project.findProperty("pluginVersion").toString()
-        val projectName = project.name
-        projectDir.resolve("README.md").writeText(
-            """
+        val readMe = """
                 # $projectName
                 
                 ## プラグイン説明
@@ -140,10 +177,30 @@ open class SetupTask : DefaultTask() {
                 - Kotlin Version : 1.8.0
                 
                 ## プロジェクト情報
-                - プロジェクトパス : ${uri.path}
+                - プロジェクトパス : $projectPath
                 - 開発者名 : $rawAccount
                 - 開発開始日 : ${LocalDate.now()}
             """.trimIndent()
+        makeFile(projectDir, "README.md", readMe)
+    }
+
+    private fun makeFile(dir: File,fileName: String,text: String) {
+        val file = dir.resolve(fileName)
+        file.writeText(text)
+    }
+
+    private fun setupBuildGradle(projectDir: File,ctx:SetupContext) {
+        val replaceMap = mapOf(
+            "@group@" to ctx.groupId,
+            "@author@" to ctx.account,
+            "@website@" to "https://github.com/${ctx.rawAccount}"
         )
+
+        val buildScript = projectDir.resolve("build.gradle.kts")
+        var text = buildScript.readText()
+        for ((original,replace) in replaceMap) {
+            text = text.replace(original, replace)
+        }
+        buildScript.writeText(text)
     }
 }
