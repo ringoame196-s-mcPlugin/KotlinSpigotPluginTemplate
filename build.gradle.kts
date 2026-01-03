@@ -1,5 +1,4 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-import groovy.lang.Closure
 import net.minecrell.pluginyml.bukkit.BukkitPluginDescription
 import java.net.HttpURLConnection
 import java.net.URL
