@@ -1,3 +1,5 @@
+package generator
+
 data class SetupContext(
 	val rawAccount: String,
 	val account: String,
