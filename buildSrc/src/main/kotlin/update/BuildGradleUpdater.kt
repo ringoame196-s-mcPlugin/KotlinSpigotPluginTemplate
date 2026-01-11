@@ -12,7 +12,7 @@ class BuildGradleUpdater(
 		val replaceMap = mapOf(
 			"@group@" to ctx.groupId,
 			"@author@" to ctx.account,
-			"@website@" to "https://github.com/${ctx.rawAccount}"
+			"@website@" to "https://github.com/${ctx.rawAccount}/${ctx.projectName}"
 		)
 
 		val buildScript = projectDir.resolve("build.gradle.kts")
