@@ -52,6 +52,16 @@ configure<BukkitPluginDescription> {
         }
     }
     */
+
+    /*
+    パーミッション追加用
+    permissions {
+        register("test.test") {
+            description = "This is a test permission!"
+            default = BukkitPluginDescription.Permission.Default.OP
+        }
+    }
+    */
 }
 
 tasks.withType<ShadowJar> {
