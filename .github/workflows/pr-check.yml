@@ -21,20 +21,14 @@ jobs:
         with:
           java-version: '22'
           distribution: 'temurin'
+          cache: gradle
 
-      - uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle
+      - name: Grant execute permission
+        run: chmod +x ./gradlew
 
       - name: Lint & Build
         run: |
-          ./gradlew lintKotlin
-          ./gradlew build
+          ./gradlew lintKotlin build --parallel --build-cache --no-daemon
 
       - name: Auto Merge (Rebase)
         if: success() && github.event.pull_request.head.repo.full_name == github.repository

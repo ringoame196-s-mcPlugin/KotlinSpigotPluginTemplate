@@ -52,6 +52,16 @@ configure<BukkitPluginDescription> {
         }
     }
     */
+
+    /*
+    パーミッション追加用
+    permissions {
+        register("test.test") {
+            description = "This is a test permission!"
+            default = BukkitPluginDescription.Permission.Default.OP
+        }
+    }
+    */
 }
 
 tasks.withType<ShadowJar> {
@@ -65,7 +75,7 @@ tasks.withType<ShadowJar> {
 tasks.named("build") {
     dependsOn("shadowJar")
     // プラグインを特定のパスへ自動コピー
-    val copyFilePath = "M:/TwitterServer/plugins/" // コピー先のフォルダーパス
+    val copyFilePath = "Z:/minecraft/TwitterServer/plugins/" // コピー先のフォルダーパス
     val copyFile = File(copyFilePath)
     if (copyFile.exists() && copyFile.isDirectory) {
         doFirst {

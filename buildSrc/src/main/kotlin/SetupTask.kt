@@ -19,6 +19,7 @@ open class SetupTask : DefaultTask() {
             setupBranch(git)
 
             val ctx  = makeSetupContext(git)
+            setupGitHubTopics(ctx)
             SrcGenerator(projectDir, ctx).generate()
             ResourcesGenerator(projectDir).generate()
             BuildGradleUpdater(projectDir, ctx).update()
@@ -75,6 +76,31 @@ open class SetupTask : DefaultTask() {
         } catch (e: RefAlreadyExistsException) {
             git.checkout().setName("developer").call()
             logger.lifecycle("🔁 developer ブランチへ切替")
+        }
+    }
+
+    @OptIn(ExperimentalStdlibApi::class)
+    private fun setupGitHubTopics(ctx: SetupContext) {
+        try {
+            ProcessBuilder(
+                "gh",
+                "repo",
+                "edit",
+                "${ctx.rawAccount}/${ctx.projectName}",
+                "--add-topic", "minecraft",
+                "--add-topic", "minecraft-plugin",
+                "--add-topic", "paper",
+                "--add-topic", "papermc",
+                "--add-topic", "kotlin",
+                "--add-topic", ctx.projectName.lowercase()
+            )
+                .inheritIO()
+                .start()
+                .waitFor()
+
+            logger.lifecycle("🏷 GitHub Topics を設定")
+        } catch (e: Exception) {
+            logger.warn("GitHub Topics の設定に失敗: ${e.message}")
         }
     }
 }
