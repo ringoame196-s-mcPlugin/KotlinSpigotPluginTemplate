@@ -92,7 +92,7 @@ open class SetupTask : DefaultTask() {
                 "--add-topic", "paper",
                 "--add-topic", "papermc",
                 "--add-topic", "kotlin",
-                "--add-topic", ctx.projectName.lowercase()
+                "--add-topic", ctx.projectName.lowercase().replace("_", "-")
             )
                 .inheritIO()
                 .start()
