@@ -1,3 +1,65 @@
+# Gemini AI Code Review Integration
+
+- **Date**: 2026-10-06
+- **Status**: Implemented
+- **Author**: Development Team
+
+---
+
+## 概要
+
+Pull Request 時の自動チェックフローにおいて、Detekt / Lint / Build チェックをパスしたコードに対し、Gemini API (`gemini-3.8-flash`) を用いた「ひとくち AI コードレビュー」を自動投稿する機能を `.github/workflows/lint-build.yml` に組み込みました。
+
+---
+
+## 導入背景・目的
+
+1. **開発モチベーションの向上**: 自動レビューにおいてコードの良い点や Paper API の適切な使用方法を褒めるポジティブフィードバックを保証。
+2. **質の高いワンポイント指摘**: 静的解析ツール（Detekt/Lint）では検知できない、Kotlin らしい書き方（Idiomatic Kotlin）や可読性・パフォーマンス向上のアドバイスを 1 点に絞って提示。
+3. **無駄な CI リソースの削減**: ビルドや静的解析が成功した場合のみ AI レビューを発動させる設計とし、不必要な API 呼び出しを防止。
+
+---
+
+## ワークフロー構成詳細
+
+### 実行タイミング (`.github/workflows/lint-build.yml`)
+
+1. `Detekt, Lint & Build` ステップで静的解析とビルドを実行。
+2. 上記が成功（`if: success()`）した場合のみ、`AI Code Review` ステップを実行。
+3. `git diff` を取得し、環境変数 `DIFF` を介して Python スクリプト経由で Gemini API (`gemini-3.8-flash`) を呼び出し。
+4. レビュー結果を `review.txt` に保存し、`gh pr comment` を用いて PR に自動コメント投稿。
+5. 全ステップ成功後に `Auto Merge (Rebase)` を実行。
+
+---
+
+## 使用技術・環境変数
+
+| 項目 | 使用内容 | 役割 |
+| :--- | :--- | :--- |
+| **モデル** | `gemini-3.8-flash` | 高速かつ低コストなレスポンス生成 |
+| **CLI ツール** | `gh` (GitHub CLI) | PR へのコメント書き込み |
+| **Secrets** | `GEMINI_API_KEY` | Gemini API 認証用 |
+| **Tokens** | `GITHUB_TOKEN` | GitHub API / CLI 認証用 (`pull-requests: write`) |
+
+---
+
+## 設定されたプロンプト
+
+```text
+あなたは親切で頼もしいシニア Kotlin エンジニアです。
+以下は Detekt と Lint の自動チェックをすべてクリアした綺麗な Minecraft プラグイン (Paper) のコード変更差分（Diff）です。
+
+【レビューのルール】
+1. **必ず1つ以上、コードの良い部分や工夫されている点（Paper API の適切な使用、ロジックの美しさなど）を具体的に褒めてください。**
+2. 構文エラーやスタイルチェックは既にパスしているため、基本的な指摘は不要です。
+3. さらに「こう書くともっと Kotlin らしさ（Idiomatic Kotlin）や Paper らしさが出る」「可読性やパフォーマンスが少し上がる」といった【ひとくちアドバイス】があれば 1 点だけ添えてください。（無ければ褒め言葉だけでOKです）
+```
+
+---
+
+## 補足仕様 (ワークフロー設定全文)
+
+```yaml
 name: Kotlin Lint, Detekt & Build Check
 
 on:
@@ -6,7 +68,7 @@ on:
       - main
       - master
     paths:
-      - 'src/**/*.kt' # Kotlinファイルに変更があった場合のみ発動（CIの無駄な消費を防止）
+      - 'src/**/*.kt' # Kotlinファイルに変更があった場合のみ発動
 
 jobs:
   build:
@@ -32,7 +94,6 @@ jobs:
         run: chmod +x ./gradlew
 
       # --- 🛡 静的解析・ビルドチェック ---
-      # Detekt・Lint・Buildを一括実行（1つでもエラーがあればここで停止）
       - name: Detekt, Lint & Build
         run: |
           ./gradlew detekt lintKotlin build --parallel --build-cache --no-daemon
@@ -109,7 +170,6 @@ jobs:
           fi
 
       # --- 🚀 Auto Merge (Rebase) ---
-      # リポジトリ所有者（OWNER）または組織メンバー（MEMBER）が作成したPRかつ、全チェック成功時のみ自動マージ
       - name: Auto Merge (Rebase)
         if: |
           success() && 
@@ -122,3 +182,4 @@ jobs:
             -H "Accept: application/vnd.github+json" \
             https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/merge \
             -d '{"merge_method": "merge"}'
+```
