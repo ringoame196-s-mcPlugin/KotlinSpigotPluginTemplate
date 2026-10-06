@@ -5,11 +5,9 @@ on:
     branches:
       - main
       - master
-    paths:
-      - 'src/**/*.kt' # Kotlinファイルに変更があった場合のみ発動（CIの無駄な消費を防止）
 
 jobs:
-  build:
+  check-and-merge:
     if: github.event.pull_request.draft == false # Draft PR（下書き）の場合は実行しない
     runs-on: ubuntu-latest
 
@@ -19,25 +17,127 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Git Diff や履歴を取得するために指定
 
-      - uses: actions/setup-java@v4
+      # --- 🔍 Kotlinファイルの変更チェック ---
+      - name: Check for Kotlin file changes
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            kotlin:
+              - 'src/**/*.kt'
+
+      # --- ☕ Java環境のセットアップ ---
+      - name: Setup Java
+        if: steps.filter.outputs.kotlin == 'true'
+        uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
           cache: gradle
 
       - name: Grant execute permission
+        if: steps.filter.outputs.kotlin == 'true'
         run: chmod +x ./gradlew
 
-      # --- 🛡️️ 静的解析・ビルドチェック ---
-      # Detekt・Lint・Buildを一括実行（1つでもエラーがあればここで停止）
+      # --- 🛡 静的解析・ビルドチェック ---
       - name: Detekt, Lint & Build
+        if: steps.filter.outputs.kotlin == 'true'
         run: |
           ./gradlew detekt lintKotlin build --parallel --build-cache --no-daemon
 
-      # --- 🚀 Auto Merge (Rebase) ---
-      # リポジトリ所有者（OWNER）または組織メンバー（MEMBER）が作成したPRかつ、全チェック成功時のみ自動マージ
-      - name: Auto Merge (Rebase)
+      # --- 🤖 Gemini AI ひとくちレビュー ---
+      - name: AI Code Review
+        if: steps.filter.outputs.kotlin == 'true' && success()
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          # 1. 変更された .kt ファイルの Diff を取得
+          DIFF=$(git diff $BASE_SHA..$HEAD_SHA -- '*.kt')
+
+          if [ -z "$DIFF" ]; then
+            echo "No Kotlin diff found."
+            exit 0
+          fi
+
+          # 2. 公式 SDK のインストール
+          pip install google-genai > /dev/null 2>&1
+
+          # 3. SDK を使ってレビュー生成（フォールバック機能付き）
+          export DIFF="$DIFF"
+          python - << 'EOF' > review.txt
+          import os
+          import sys
+          import warnings
+
+          warnings.filterwarnings("ignore")
+
+          from google import genai
+          from google.genai.errors import APIError
+
+          api_key = os.environ.get("GEMINI_API_KEY")
+          diff = os.environ.get("DIFF", "")
+
+          if not api_key:
+              sys.stderr.write("⚠️ GEMINI_API_KEY が設定されていません。\n")
+              sys.exit(0)
+
+          client = genai.Client(api_key=api_key)
+
+          prompt = f"""
+          あなたは親切で頼もしいシニア Kotlin エンジニアです。
+          以下は Detekt と Lint の自動チェックをすべてクリアした綺麗な Minecraft プラグイン (Paper) のコード変更差分（Diff）です。
+
+          【レビューのルール】
+          1. **必ず1つ以上、コードの良い部分や工夫されている点（Paper API の適切な使用、ロジックの美しさなど）を具体的に褒めてください。**
+          2. 構文エラーやスタイルチェックは既にパスしているため、基本的な指摘は不要です。
+          3. さらに「こう書くともっと Kotlin らしさ（Idiomatic Kotlin）や Paper らしさが出る」「可読性やパフォーマンスが少し上がる」といった【ひとくちアドバイス】があれば 1 点だけ添えてください。（無ければ褒め言葉だけでOKです）
+
+          【レビュー対象の Diff】
+          ```diff
+          {diff[:8000]}
+          ```
+          """
+
+          # 本命（高上限・爆速） + 予備1（高上限） + 予備2（超高安定）
+          models_to_try = [
+              'gemini-3.5-flash-lite',
+              'gemini-3.1-flash-lite',
+              'gemini-2.5-flash'
+          ]
+
+          for model_name in models_to_try:
+              try:
+                  response = client.models.generate_content(
+                      model=model_name,
+                      contents=prompt,
+                  )
+                  print("### 🤖 Gemini AI ひとくちレビュー\n\n" + response.text)
+                  break
+              except APIError as e:
+                  sys.stderr.write(f"[{model_name}] APIError ({e.code}): {e.message}\n")
+                  continue
+              except Exception as e:
+                  sys.stderr.write(f"[{model_name}] Error: {e}\n")
+                  continue
+          EOF
+
+          # 4. 正常にレビューテキストが生成された場合（🤖が含まれる場合）のみコメント投稿
+          if grep -q "🤖 Gemini AI ひとくちレビュー" review.txt; then
+            gh pr comment $PR_NUMBER --body-file review.txt
+          else
+            echo "有効なレビュー文面が生成されなかったため、PRコメントの投稿をスキップしました。"
+          fi
+
+      # --- 🚀 Auto Merge (Rebase / Direct Merge) ---
+      # Kotlinの変更がなくても（スキップされた場合でも）、エラーがなければ自動マージされる
+      - name: Auto Merge
         if: |
           success() && 
           github.event.pull_request.head.repo.full_name == github.repository && 
