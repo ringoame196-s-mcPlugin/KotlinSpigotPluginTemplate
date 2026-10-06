@@ -90,51 +90,67 @@ tasks.withType<ShadowJar> {
     relocate("org.jetbrains.annotations", "@group@.libs.org.jetbrains.annotations")
 }
 
-tasks.named("build") {
+val deployPlugin by tasks.registering {
+    group = "deployment"
+    description = "ビルドされたJARをサーバープラグインフォルダへコピーし、通知APIを呼び出します"
+
+    // shadowJarの成果物出力後に実行する
     dependsOn("shadowJar")
-    // プラグインを特定のパスへ自動コピー
-    val copyFilePath = "Z:/minecraft/TwitterServer/plugins/" // コピー先のフォルダーパス
-    val copyFile = File(copyFilePath)
-    if (copyFile.exists() && copyFile.isDirectory) {
-        doFirst {
-            copy {
-                from(buildDir.resolve("libs/${project.name}-$fullVersion.jar"))
-                into(copyFile)
-            }
+
+    val copyDirPath = "Z:/minecraft/TwitterServer/plugins/"
+    val targetDir = file(copyDirPath)
+
+    // タスク実行時の処理
+    doLast {
+        if (!targetDir.exists() || !targetDir.isDirectory) {
+            logger.warn("自動コピーをスキップしました: ディレクトリが存在しません (${targetDir.path})")
+            return@doLast
         }
-        doLast {
-            val port = 25585
-            val ip = "ringoame-server"
-            val apiUrl = "http://$ip:$port/plugin?name=${project.name}"
 
-            try {
-                val url = URL(apiUrl)
-                val connection = url.openConnection() as HttpURLConnection
-
-                // タイムアウト設定（重要）
-                connection.connectTimeout = 2000  // 2秒でタイムアウト
-                connection.readTimeout = 2000
-
-                connection.requestMethod = "GET"
-                connection.connect()
-
-                if (connection.responseCode == HttpURLConnection.HTTP_OK) {
-                    val response = connection.inputStream.bufferedReader().use { it.readText() }
-                    println("API Response: $response")
-                } else {
-                    println("Server responded with error code: ${connection.responseCode}")
-                }
-
-                connection.disconnect()
-            } catch (e: java.net.ConnectException) {
-                println("Warning: サーバーに接続できません（オフラインかもしれません）")
-            } catch (e: java.net.SocketTimeoutException) {
-                println("Warning: 接続がタイムアウトしました")
-            } catch (e: Exception) {
-                println("Warning: API通信で予期しないエラーが発生しました: ${e.message}")
+        // JARファイルのコピー
+        val jarFile = layout.buildDirectory.file("libs/${project.name}-$fullVersion.jar").get().asFile
+        if (jarFile.exists()) {
+            copy {
+                from(jarFile)
+                into(targetDir)
             }
+            logger.lifecycle("プラグインをコピーしました: ${jarFile.name} -> ${targetDir.path}")
+        } else {
+            logger.error("コピー対象のJARファイルが見つかりません: ${jarFile.path}")
+            return@doLast
+        }
+
+        // サーバーへのリロード通知API呼び出し
+        val port = 25585
+        val ip = "ringoame-server"
+        val apiUrl = "http://$ip:$port/plugin?name=${project.name}"
+
+        try {
+            val connection = (URL(apiUrl).openConnection() as HttpURLConnection).apply {
+                connectTimeout = 2000
+                readTimeout = 2000
+                requestMethod = "GET"
+            }
+
+            if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+                val response = connection.inputStream.bufferedReader().use { it.readText() }
+                logger.lifecycle("API Response: $response")
+            } else {
+                logger.warn("Server responded with error code: ${connection.responseCode}")
+            }
+            connection.disconnect()
+        } catch (e: java.net.ConnectException) {
+            logger.warn("Warning: サーバーに接続できません（オフラインの可能性があります）")
+        } catch (e: java.net.SocketTimeoutException) {
+            logger.warn("Warning: 接続がタイムアウトしました")
+        } catch (e: Exception) {
+            logger.warn("Warning: API通信で予期しないエラーが発生しました: ${e.message}")
         }
     }
+}
+
+tasks.named("build") {
+    finalizedBy(deployPlugin)
 }
 
 tasks.named("printVersion") {
