@@ -38,7 +38,8 @@ class SrcGenerator(
 			    private fun registerEvents() {
 			        server.pluginManager.registerEvents(Events(), plugin)
 			    }
-
+				
+				@Suppress("UnusedPrivateMember")
 			    private fun registerCommands() {
 			        val command = getCommand("command")
 			        command?.setExecutor(Command())
