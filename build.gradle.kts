@@ -11,6 +11,7 @@ plugins {
     id("dev.s7a.gradle.minecraft.server") version "1.2.0"
     id("com.github.johnrengelman.shadow") version "7.1.2"
     id("org.jmailen.kotlinter") version "3.8.0"
+    id("io.gitlab.arturbosch.detekt") version "1.23.6"
 }
 
 val mcVersion: String by project
@@ -33,6 +34,23 @@ configurations["implementation"].extendsFrom(shadowImplementation)
 dependencies {
     shadowImplementation(kotlin("stdlib"))
     compileOnly("io.papermc.paper:paper-api:$mcVersion-R0.1-SNAPSHOT")
+}
+
+detekt {
+    // 構文チェックの対象バージョンを設定（Kotlinのバージョンに合わせる）
+    toolVersion = "1.23.6"
+
+    // ソースファイルの指定
+    source.setFrom("src/main/kotlin", "src/main/java")
+
+    // デフォルトの設定ルールを使用
+    buildUponDefaultConfig = true
+
+    // カスタムルールファイルを指定する場合（後述で生成）
+    config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
+
+    // 問題検出時にビルドを失敗させるかどうか（最初は false にして徐々に直すのがおすすめ）
+    ignoreFailures = false
 }
 
 configure<BukkitPluginDescription> {
@@ -72,57 +90,67 @@ tasks.withType<ShadowJar> {
     relocate("org.jetbrains.annotations", "@group@.libs.org.jetbrains.annotations")
 }
 
-tasks.named("build") {
+val deployPlugin by tasks.registering {
+    group = "deployment"
+    description = "ビルドされたJARをサーバープラグインフォルダへコピーし、通知APIを呼び出します"
+
+    // shadowJarの成果物出力後に実行する
     dependsOn("shadowJar")
-    // プラグインを特定のパスへ自動コピー
-    val copyFilePath = "Z:/minecraft/TwitterServer/plugins/" // コピー先のフォルダーパス
-    val copyFile = File(copyFilePath)
-    if (copyFile.exists() && copyFile.isDirectory) {
-        doFirst {
-            copy {
-                from(buildDir.resolve("libs/${project.name}-$fullVersion.jar"))
-                into(copyFile)
-            }
+
+    val copyDirPath = "Z:/minecraft/TwitterServer/plugins/"
+    val targetDir = file(copyDirPath)
+
+    // タスク実行時の処理
+    doLast {
+        if (!targetDir.exists() || !targetDir.isDirectory) {
+            logger.warn("自動コピーをスキップしました: ディレクトリが存在しません (${targetDir.path})")
+            return@doLast
         }
-        doLast {
-            val port = 25585
-            val ip = "ringoame-server"
-            val apiUrl = "http://$ip:$port/plugin?name=${project.name}"
 
-            try {
-                val url = URL(apiUrl)
-                val connection = url.openConnection() as HttpURLConnection
-
-                // タイムアウト設定（重要）
-                connection.connectTimeout = 2000  // 2秒でタイムアウト
-                connection.readTimeout = 2000
-
-                connection.requestMethod = "GET"
-                connection.connect()
-
-                if (connection.responseCode == HttpURLConnection.HTTP_OK) {
-                    val response = connection.inputStream.bufferedReader().use { it.readText() }
-                    println("API Response: $response")
-                } else {
-                    println("Server responded with error code: ${connection.responseCode}")
-                }
-
-                connection.disconnect()
-            } catch (e: java.net.ConnectException) {
-                println("Warning: サーバーに接続できません（オフラインかもしれません）")
-            } catch (e: java.net.SocketTimeoutException) {
-                println("Warning: 接続がタイムアウトしました")
-            } catch (e: Exception) {
-                println("Warning: API通信で予期しないエラーが発生しました: ${e.message}")
+        // JARファイルのコピー
+        val jarFile = layout.buildDirectory.file("libs/${project.name}-$fullVersion.jar").get().asFile
+        if (jarFile.exists()) {
+            copy {
+                from(jarFile)
+                into(targetDir)
             }
+            logger.lifecycle("プラグインをコピーしました: ${jarFile.name} -> ${targetDir.path}")
+        } else {
+            logger.error("コピー対象のJARファイルが見つかりません: ${jarFile.path}")
+            return@doLast
+        }
+
+        // サーバーへのリロード通知API呼び出し
+        val port = 25585
+        val ip = "ringoame-server"
+        val apiUrl = "http://$ip:$port/plugin?name=${project.name}"
+
+        try {
+            val connection = (URL(apiUrl).openConnection() as HttpURLConnection).apply {
+                connectTimeout = 2000
+                readTimeout = 2000
+                requestMethod = "GET"
+            }
+
+            if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+                val response = connection.inputStream.bufferedReader().use { it.readText() }
+                logger.lifecycle("API Response: $response")
+            } else {
+                logger.warn("Server responded with error code: ${connection.responseCode}")
+            }
+            connection.disconnect()
+        } catch (e: java.net.ConnectException) {
+            logger.warn("Warning: サーバーに接続できません（オフラインの可能性があります）")
+        } catch (e: java.net.SocketTimeoutException) {
+            logger.warn("Warning: 接続がタイムアウトしました")
+        } catch (e: Exception) {
+            logger.warn("Warning: API通信で予期しないエラーが発生しました: ${e.message}")
         }
     }
 }
 
-tasks.named("printVersion") {
-    doLast {
-        println(fullVersion)
-    }
+tasks.named("build") {
+    finalizedBy(deployPlugin)
 }
 
 tasks.named("printVersion") {
