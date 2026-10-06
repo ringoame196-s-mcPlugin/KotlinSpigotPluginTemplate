@@ -1,13 +1,16 @@
-name: Kotlin Lint & Build Check
+name: Kotlin Lint, Detekt & Build Check
 
 on:
   pull_request:
     branches:
       - main
       - master
+    paths:
+      - 'src/**/*.kt' # .kt ファイルの変更時のみ実行
 
 jobs:
   build:
+    if: github.event.pull_request.draft == false # Draft PR（下書き）は除外
     runs-on: ubuntu-latest
 
     permissions:
@@ -26,10 +29,14 @@ jobs:
       - name: Grant execute permission
         run: chmod +x ./gradlew
 
-      - name: Lint & Build
+      # --- 🛡️ Detekt & Lint & Build ---
+      # コード解析・フォーマット・ビルドチェックを一括実行
+      - name: Detekt, Lint & Build
         run: |
-          ./gradlew lintKotlin build --parallel --build-cache --no-daemon
+          ./gradlew detekt lintKotlin build --parallel --build-cache --no-daemon
 
+      # --- 🚀 Auto Merge ---
+      # Detekt や Build が全て成功した場合のみ自動マージ
       - name: Auto Merge (Rebase)
         if: success() && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.login == 'Ringoame196'
         run: |
