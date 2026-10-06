@@ -135,8 +135,7 @@ jobs:
             echo "有効なレビュー文面が生成されなかったため、PRコメントの投稿をスキップしました。"
           fi
 
-      # --- 🚀 Auto Merge (Rebase / Direct Merge) ---
-      # Kotlinの変更がなくても（スキップされた場合でも）、エラーがなければ自動マージされる
+      # --- 🚀 Auto Merge ---
       - name: Auto Merge
         if: |
           success() && 
