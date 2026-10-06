@@ -159,10 +159,4 @@ tasks.named("printVersion") {
     }
 }
 
-tasks.named("printVersion") {
-    doLast {
-        println(fullVersion)
-    }
-}
-
 task<SetupTask>("setup")
