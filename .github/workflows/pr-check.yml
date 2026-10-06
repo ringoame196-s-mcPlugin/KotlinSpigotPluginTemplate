@@ -6,11 +6,11 @@ on:
       - main
       - master
     paths:
-      - 'src/**/*.kt' # .kt ファイルの変更時のみ実行
+      - 'src/**/*.kt' # Kotlinファイルに変更があった場合のみ発動（CIの無駄な消費を防止）
 
 jobs:
   build:
-    if: github.event.pull_request.draft == false # Draft PR（下書き）は除外
+    if: github.event.pull_request.draft == false # Draft PR（下書き）の場合は実行しない
     runs-on: ubuntu-latest
 
     permissions:
@@ -29,16 +29,19 @@ jobs:
       - name: Grant execute permission
         run: chmod +x ./gradlew
 
-      # --- 🛡️ Detekt & Lint & Build ---
-      # コード解析・フォーマット・ビルドチェックを一括実行
+      # --- 🛡️️ 静的解析・ビルドチェック ---
+      # Detekt・Lint・Buildを一括実行（1つでもエラーがあればここで停止）
       - name: Detekt, Lint & Build
         run: |
           ./gradlew detekt lintKotlin build --parallel --build-cache --no-daemon
 
-      # --- 🚀 Auto Merge ---
-      # Detekt や Build が全て成功した場合のみ自動マージ
+      # --- 🚀 Auto Merge (Rebase) ---
+      # リポジトリ所有者（OWNER）または組織メンバー（MEMBER）が作成したPRかつ、全チェック成功時のみ自動マージ
       - name: Auto Merge (Rebase)
-        if: success() && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.login == 'Ringoame196'
+        if: |
+          success() && 
+          github.event.pull_request.head.repo.full_name == github.repository && 
+          (github.event.pull_request.author_association == 'OWNER' || github.event.pull_request.author_association == 'MEMBER' || github.event.pull_request.author_association == 'COLLABORATOR')
         run: |
           curl -L \
             -X PUT \
