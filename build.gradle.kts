@@ -11,6 +11,7 @@ plugins {
     id("dev.s7a.gradle.minecraft.server") version "1.2.0"
     id("com.github.johnrengelman.shadow") version "7.1.2"
     id("org.jmailen.kotlinter") version "3.8.0"
+    id("io.gitlab.arturbosch.detekt") version "1.23.6"
 }
 
 val mcVersion: String by project
@@ -33,6 +34,23 @@ configurations["implementation"].extendsFrom(shadowImplementation)
 dependencies {
     shadowImplementation(kotlin("stdlib"))
     compileOnly("io.papermc.paper:paper-api:$mcVersion-R0.1-SNAPSHOT")
+}
+
+detekt {
+    // 構文チェックの対象バージョンを設定（Kotlinのバージョンに合わせる）
+    toolVersion = "1.23.6"
+
+    // ソースファイルの指定
+    source.setFrom("src/main/kotlin", "src/main/java")
+
+    // デフォルトの設定ルールを使用
+    buildUponDefaultConfig = true
+
+    // カスタムルールファイルを指定する場合（後述で生成）
+    config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
+
+    // 問題検出時にビルドを失敗させるかどうか（最初は false にして徐々に直すのがおすすめ）
+    ignoreFailures = false
 }
 
 configure<BukkitPluginDescription> {
