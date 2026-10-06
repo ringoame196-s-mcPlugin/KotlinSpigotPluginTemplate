@@ -97,11 +97,23 @@ val deployPlugin by tasks.registering {
     // shadowJarの成果物出力後に実行する
     dependsOn("shadowJar")
 
-    val copyDirPath = "Z:/minecraft/TwitterServer/plugins/"
+    // CI（GitHub Actions等）環境の場合はローカルパスを使用せずダミーディレクトリを指定
+    val isCI = System.getenv("CI") != null
+    val copyDirPath = if (isCI) {
+        layout.buildDirectory.dir("deploy").get().asFile.path
+    } else {
+        "Z:/minecraft/TwitterServer/plugins/"
+    }
     val targetDir = file(copyDirPath)
 
     // タスク実行時の処理
     doLast {
+        // CI環境では自動コピーとAPI通知をスキップする
+        if (isCI) {
+            logger.lifecycle("CI環境のため、プラグインの自動デプロイとAPI通知をスキップします。")
+            return@doLast
+        }
+
         if (!targetDir.exists() || !targetDir.isDirectory) {
             logger.warn("自動コピーをスキップしました: ディレクトリが存在しません (${targetDir.path})")
             return@doLast
