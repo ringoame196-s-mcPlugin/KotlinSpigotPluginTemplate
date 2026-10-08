@@ -80,7 +80,7 @@ class SrcGenerator(
                         return true
                     }
 
-                    override fun onTabComplete(commandSender: CommandSender, command: Command, label: String, args: Array<out String>): MutableList<String>? {
+                    override fun onTabComplete(commandSender: CommandSender, command: Command, label: String, args: Array<out String>): List<String>? {
                         return null
                     }
                 }
